@@ -1,0 +1,1 @@
+[error] java.lang.RuntimeException: Conflicting cross-version suffixes in: com.typesafe.akka:akka-http-core, com.typesafe.akka:akka-parsing, com.typesafe.akka:akka-http
