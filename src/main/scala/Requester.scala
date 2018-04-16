@@ -12,22 +12,20 @@ import scala.concurrent.duration._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-
-
 class Requester extends Actor {
 
   def receive(): PartialFunction[Any, Unit] = {
-    case order: String => request()
+    case "Try to shake hand!" => request()
     case _ =>
   }
 
   def request(): Unit = {
     otherNodes.foreach(portNode => {
-      val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = s"http://localhost:$portNode/handshakeRequest"))
+      val uri = s"http://localhost:$portNode/handshakeRequest"
+      val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
       responseFuture.onComplete {
         case Success(res) => {
           val response: Unit = println(res.entity.toStrict(1 second)(Attempt.materializer))
-          //println("Port - " + response.port)
         }
         case Failure(_) =>
       }
@@ -35,7 +33,7 @@ class Requester extends Actor {
   }
 
   def parseResponseHandshake(json: String): HandshakeRequest = {
-    implicit val formats = DefaultFormats
+    implicit val formats: DefaultFormats.type = DefaultFormats
     parse(json).extract[HandshakeRequest]
   }
 }

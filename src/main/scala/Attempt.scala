@@ -30,10 +30,10 @@ object Attempt extends Json {
   val log = Logging(system, this)
 
   system.scheduler.schedule(3 seconds, 60 seconds) {
-    requester ! "Act"
+    requester ! "Try to shake hand!"
   }
 
-  def main(args: Array[String]): Unit = {
+  def main1(args: Array[String]): Unit = {
     log.info(s"Start of app on port $port.")
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] = Http().bind(host, port)
     val bindingFuture: Future[Http.ServerBinding] =
