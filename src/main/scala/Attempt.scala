@@ -1,4 +1,4 @@
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
@@ -8,29 +8,37 @@ import akka.event.{LogSource, Logging}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
+import scala.concurrent.duration._
 
 object Attempt extends Json {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
   implicit val context: ExecutionContextExecutor = system.dispatcher
+
   implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
     def genString(o: AnyRef): String = o.getClass.getName
 
     override def getClazz(o: AnyRef): Class[_] = o.getClass
   }
 
+  val requester: ActorRef = system.actorOf(Props[Requester], "requester")
+
   val host: String = Config.getString("http.host")
   val port: Int = Config.getInt("http.port")
   val otherNodes: Set[Int] = Set(8997, 8998, 8999).diff(Set(port))
   val log = Logging(system, this)
 
+  system.scheduler.schedule(3 seconds, 60 seconds) {
+    requester ! "Act"
+  }
+
   def main(args: Array[String]): Unit = {
-    log.info("Start of app.")
+    log.info(s"Start of app on port $port.")
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] = Http().bind(host, port)
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection =>
-        println("Accepted new connection from " + connection.remoteAddress)
+        log.info("New request from " + connection.remoteAddress)
         connection handleWithSyncHandler requestHandler
       }).run()
   }

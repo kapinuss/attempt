@@ -49,25 +49,4 @@ object Config {
 
   def getBoolean(key: String): Boolean = config.getBoolean(key)
 
-  def gerDuration(key: String, default: Duration): Duration =
-    try {
-      getDuration(key)
-    } catch {
-      case _: ConfigException.Missing => default
-    }
-
-  def getDuration(key: String): Duration = config.getDuration(key)
-
-
-  def loadEnvConf(env: String): Unit = env match {
-    case "dev" | "test" | "prod" =>
-      config = ConfigFactory.load(env + ".conf").withFallback(config)
-  }
-
-  def loadExtraConf(path: String): Unit = {
-    val extraConfFile = new File(path)
-    if (extraConfFile.exists())
-      config = ConfigFactory.parseFile(extraConfFile).withFallback(config)
-  }
-
 }
