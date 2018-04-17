@@ -9,7 +9,6 @@ import akka.event.{LogSource, Logging}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 
 object Attempt extends Json {
@@ -25,6 +24,7 @@ object Attempt extends Json {
   }
 
   val handshaker: ActorRef = system.actorOf(Props[Handshaker], "handshaker")
+  val wsRequester: ActorRef = system.actorOf(Props[WSRequester], "wsRequester")
 
   val host: String = Config.getString("http.host")
   val port: Int = Config.getInt("http.port")
@@ -33,6 +33,7 @@ object Attempt extends Json {
 
   system.scheduler.schedule(3 seconds, 60 seconds) {
     handshaker ! "Try to shake hand!"
+    wsRequester ! "wsRequest!"
   }
 
   def main(args: Array[String]): Unit = {
@@ -69,9 +70,8 @@ object Attempt extends Json {
   }
 
   val webSocketService: Flow[Message, TextMessage, NotUsed] = Flow[Message].mapConcat {
-    case tm: TextMessage => TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil
-    case bm: BinaryMessage =>
-      bm.dataStream.runWith(Sink.ignore)
+    case tm: TextMessage => { println("Received message via WS"); TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil }
+    case bm: BinaryMessage => bm.dataStream.runWith(Sink.ignore)
       Nil
   }
 

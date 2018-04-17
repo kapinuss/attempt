@@ -9,28 +9,22 @@ import Attempt.{materializer, system}
 import akka.actor.Actor
 import system.dispatcher
 
-object WSRequest extends Actor  {
+class WSRequester extends Actor  {
+
+  val printSink: Sink[Message, Future[Done]] = Sink.foreach {
+    case message: TextMessage.Strict => println(message.text)
+  }
+
+  val helloSource: Source[Message, NotUsed] = Source.single(TextMessage("hello world!"))
+
+  val flow: Flow[Message, Message, Future[Done]] = Flow.fromSinkAndSourceMat(printSink, helloSource)(Keep.left)
 
   def receive(): PartialFunction[Any, Unit] = {
     case message: String => sendViaWS(message)
     case _ =>
   }
 
-  def sendViaWS(message: String) = {
-
-  }
-
-  def main1(args: Array[String]) = {
-
-
-    val printSink: Sink[Message, Future[Done]] = Sink.foreach {
-      case message: TextMessage.Strict => println(message.text)
-    }
-
-    val helloSource: Source[Message, NotUsed] = Source.single(TextMessage("hello world!"))
-
-    val flow: Flow[Message, Message, Future[Done]] = Flow.fromSinkAndSourceMat(printSink, helloSource)(Keep.left)
-
+  def sendViaWS(message: String): Unit = {
     val (upgradeResponse, closed) = Http().singleWebSocketRequest(WebSocketRequest("ws://0.0.0.0:8998/ws"), flow)
 
     val connected = upgradeResponse.map { upgrade =>
