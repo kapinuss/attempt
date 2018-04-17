@@ -1,3 +1,4 @@
+import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -5,6 +6,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.event.{LogSource, Logging}
+import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
 
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
@@ -33,7 +35,7 @@ object Attempt extends Json {
     requester ! "Try to shake hand!"
   }
 
-  def main1(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit = {
     log.info(s"Start of app on port $port.")
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] = Http().bind(host, port)
     val bindingFuture: Future[Http.ServerBinding] =
@@ -56,9 +58,21 @@ object Attempt extends Json {
       HttpResponse(entity = HttpEntity(
         ContentTypes.`text/xml(UTF-8)`,
         s"""<xml><system>attempt</system><port>$port</port><message>Ready</message></xml>"""))
+    case req@HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
+      req.header[UpgradeToWebSocket] match {
+        case Some(upgrade) => upgrade.handleMessages(webSocketService)
+        case None => HttpResponse(400, entity = "Not a valid websocket request!")
+      }
     case r: HttpRequest =>
       r.discardEntityBytes()
       HttpResponse(404, entity = "This endpoint is out of support.")
+  }
+
+  val webSocketService: Flow[Message, TextMessage, NotUsed] = Flow[Message].mapConcat {
+    case tm: TextMessage => TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil
+    case bm: BinaryMessage =>
+      bm.dataStream.runWith(Sink.ignore)
+      Nil
   }
 
 
