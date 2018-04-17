@@ -24,7 +24,7 @@ object Attempt extends Json {
     override def getClazz(o: AnyRef): Class[_] = o.getClass
   }
 
-  val requester: ActorRef = system.actorOf(Props[Requester], "requester")
+  val handshaker: ActorRef = system.actorOf(Props[Handshaker], "handshaker")
 
   val host: String = Config.getString("http.host")
   val port: Int = Config.getInt("http.port")
@@ -32,7 +32,7 @@ object Attempt extends Json {
   val log = Logging(system, this)
 
   system.scheduler.schedule(3 seconds, 60 seconds) {
-    requester ! "Try to shake hand!"
+    handshaker ! "Try to shake hand!"
   }
 
   def main(args: Array[String]): Unit = {
@@ -58,7 +58,7 @@ object Attempt extends Json {
       HttpResponse(entity = HttpEntity(
         ContentTypes.`text/xml(UTF-8)`,
         s"""<xml><system>attempt</system><port>$port</port><message>Ready</message></xml>"""))
-    case req@HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
+    case req @ HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
       req.header[UpgradeToWebSocket] match {
         case Some(upgrade) => upgrade.handleMessages(webSocketService)
         case None => HttpResponse(400, entity = "Not a valid websocket request!")

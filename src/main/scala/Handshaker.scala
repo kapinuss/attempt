@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-class Requester extends Actor {
+class Handshaker extends Actor {
 
   def receive(): PartialFunction[Any, Unit] = {
     case "Try to shake hand!" => request()

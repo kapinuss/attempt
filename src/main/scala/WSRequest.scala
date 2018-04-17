@@ -5,12 +5,23 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 
 import scala.concurrent.Future
-import Attempt.{system, materializer}
+import Attempt.{materializer, system}
+import akka.actor.Actor
+import system.dispatcher
 
+object WSRequest extends Actor  {
 
-object WSRequest {
+  def receive(): PartialFunction[Any, Unit] = {
+    case message: String => sendViaWS(message)
+    case _ =>
+  }
+
+  def sendViaWS(message: String) = {
+
+  }
+
   def main1(args: Array[String]) = {
-    import system.dispatcher
+
 
     val printSink: Sink[Message, Future[Done]] = Sink.foreach {
       case message: TextMessage.Strict => println(message.text)
@@ -20,7 +31,7 @@ object WSRequest {
 
     val flow: Flow[Message, Message, Future[Done]] = Flow.fromSinkAndSourceMat(printSink, helloSource)(Keep.left)
 
-    val (upgradeResponse, closed) = Http().singleWebSocketRequest(WebSocketRequest("ws://echo.websocket.org"), flow)
+    val (upgradeResponse, closed) = Http().singleWebSocketRequest(WebSocketRequest("ws://0.0.0.0:8998/ws"), flow)
 
     val connected = upgradeResponse.map { upgrade =>
       if (upgrade.response.status == StatusCodes.SwitchingProtocols) Done
