@@ -25,6 +25,7 @@ object Attempt extends Json {
 
   val handshaker: ActorRef = system.actorOf(Props[Handshaker], "handshaker")
   val wsRequester: ActorRef = system.actorOf(Props[WSRequester], "wsRequester")
+  val nodeKeeper: ActorRef = system.actorOf(Props[WSRequester], "nodeKeeper")
 
   val host: String = Config.getString("http.host")
   val port: Int = Config.getInt("http.port")
@@ -47,20 +48,15 @@ object Attempt extends Json {
   }
 
   val requestHandler: HttpRequest => HttpResponse = {
-    case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
-      HttpResponse(entity = HttpEntity(
-        ContentTypes.`text/html(UTF-8)`,
-        "<html><body>Attempt app ver.0.1</body></html>"))
-    case HttpRequest(GET, Uri.Path("/handshakeRequest"), _, _, _) =>
-      HttpResponse(entity = HttpEntity(
-        ContentTypes.`application/json`,
-        s"""{"system": "attempt", "port": $port, "message":"Ready"}"""))
+    case HttpRequest(GET, Uri.Path("/"), _, _, _) => HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
+      "<html><body>Attempt app ver.0.1</body></html>"))
+    case HttpRequest(GET, Uri.Path("/handshakeRequest"), _, _, _) => HttpResponse(entity = HttpEntity(
+        ContentTypes.`application/json`, s"""{"system": "attempt", "port": $port, "message":"Ready"}"""))
     case HttpRequest(POST, Uri.Path("/handshakeRequest"), _, _, _) =>
-      HttpResponse(entity = HttpEntity(
-        ContentTypes.`text/xml(UTF-8)`,
+      HttpResponse(entity = HttpEntity(ContentTypes.`text/xml(UTF-8)`,
         s"""<xml><system>attempt</system><port>$port</port><message>Ready</message></xml>"""))
-    case req @ HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
-      req.header[UpgradeToWebSocket] match {
+    case request @ HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
+      request.header[UpgradeToWebSocket] match {
         case Some(upgrade) => upgrade.handleMessages(webSocketService)
         case None => HttpResponse(400, entity = "Not a valid websocket request!")
       }

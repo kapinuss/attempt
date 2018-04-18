@@ -6,7 +6,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import Attempt.{otherNodes, system}
+import Attempt.{otherNodes, system, materializer}
 import scala.concurrent.duration._
 
 import org.json4s._
@@ -24,9 +24,7 @@ class Handshaker extends Actor {
       val uri = s"http://localhost:$portNode/handshakeRequest"
       val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
       responseFuture.onComplete {
-        case Success(res) => {
-          val response: Unit = println(res.entity.toStrict(1 second)(Attempt.materializer))
-        }
+        case Success(res) => println(res.entity.toStrict(1 second)(materializer))
         case Failure(_) =>
       }
     })
