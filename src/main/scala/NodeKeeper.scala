@@ -1,4 +1,3 @@
-import akka.actor._
 import akka.persistence._
 import scala.collection.parallel.mutable.ParHashSet
 
