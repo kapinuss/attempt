@@ -1,5 +1,5 @@
 import scala.concurrent.ExecutionContext.Implicits.global
-import Attempt.{handshaker, materializer, otherNodes, system, wsRequester}
+import Attempt._
 import akka.actor.Actor
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
@@ -17,7 +17,7 @@ class ComplexActor (port: Int) extends Actor {
     self ! InfoMessage("tick")
   }
 
-  implicit var connection: Connection = Connection(Socket(port), false, false, InfoMessage(""))
+  implicit var connection: Connection = Connection(Socket(port), rest = false, ws = false, lastMessage = InfoMessage(""))
 
   def receive(): PartialFunction[Any, Unit] = {
     case InfoMessage("tick") if connection.rest && !connection.ws => messageViaWS

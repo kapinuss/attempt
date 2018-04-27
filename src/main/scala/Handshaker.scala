@@ -6,7 +6,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 
-import Attempt.{otherNodes, system, materializer}
+import Attempt._
 import scala.concurrent.duration._
 
 import org.json4s._

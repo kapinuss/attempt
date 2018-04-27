@@ -9,11 +9,14 @@ import akka.event.{LogSource, Logging}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 
 object Attempt extends Json {
+
+  val host: String = Config.getString("http.host")
+  val port: Int = Config.getInt("http.port")
+  val otherNodes: Set[Int] = Set(8997, 8998, 8999).diff(Set(port))
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -28,15 +31,10 @@ object Attempt extends Json {
   val handshaker: ActorRef = system.actorOf(Props[Handshaker], "handshaker")
   val wsRequester: ActorRef = system.actorOf(Props[WSRequester], "wsRequester")
   val nodeKeeper: ActorRef = system.actorOf(Props[WSRequester], "nodeKeeper")
-
-  //val complexActor: ActorRef = system.actorOf(Props(classOf[ComplexActor], 8999), "complexActor")
-
-  val host: String = Config.getString("http.host")
-  val port: Int = Config.getInt("http.port")
-  val otherNodes: Set[Int] = Set(8997, 8998, 8999).diff(Set(port))
   val complexActors: mutable.Buffer[ActorRef] = otherNodes.toBuffer[Int].map(
     node => system.actorOf(Props(classOf[ComplexActor], node), s"complexActor$node")
   )
+
   val log = Logging(system, this)
 
   system.scheduler.schedule(30000 seconds, 60 seconds) {
