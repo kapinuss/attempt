@@ -8,6 +8,8 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.event.{LogSource, Logging}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
 
@@ -27,18 +29,24 @@ object Attempt extends Json {
   val wsRequester: ActorRef = system.actorOf(Props[WSRequester], "wsRequester")
   val nodeKeeper: ActorRef = system.actorOf(Props[WSRequester], "nodeKeeper")
 
+  //val complexActor: ActorRef = system.actorOf(Props(classOf[ComplexActor], 8999), "complexActor")
+
   val host: String = Config.getString("http.host")
   val port: Int = Config.getInt("http.port")
   val otherNodes: Set[Int] = Set(8997, 8998, 8999).diff(Set(port))
+  val complexActors: mutable.Buffer[ActorRef] = otherNodes.toBuffer[Int].map(
+    node => system.actorOf(Props(classOf[ComplexActor], node), s"complexActor$node")
+  )
   val log = Logging(system, this)
 
-  system.scheduler.schedule(3 seconds, 60 seconds) {
+  system.scheduler.schedule(30000 seconds, 60 seconds) {
     handshaker ! "Try to shake hand!"
     wsRequester ! "wsRequest!"
   }
 
   def main(args: Array[String]): Unit = {
     log.info(s"Start of app on port $port.")
+    complexActors.foreach(actor => system.log.info(actor.toString()))
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] = Http().bind(host, port)
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection =>
@@ -66,7 +74,7 @@ object Attempt extends Json {
   }
 
   val webSocketService: Flow[Message, TextMessage, NotUsed] = Flow[Message].mapConcat {
-    case tm: TextMessage => { println("Received message via WS"); TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil }
+    case tm: TextMessage => { log.info("Received message via WS"); TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil }
     case bm: BinaryMessage => bm.dataStream.runWith(Sink.ignore)
       Nil
   }

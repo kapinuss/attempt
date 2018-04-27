@@ -24,7 +24,7 @@ class Handshaker extends Actor {
       val uri = s"http://localhost:$portNode/handshakeRequest"
       val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = uri))
       responseFuture.onComplete {
-        case Success(res) => println(res.entity.toStrict(1 second)(materializer))
+        case Success(res) => system.log.info(res.entity.toStrict(1 second)(materializer).toString)
         case Failure(_) =>
       }
     })

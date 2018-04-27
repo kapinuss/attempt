@@ -12,7 +12,7 @@ import system.dispatcher
 class WSRequester extends Actor  {
 
   val printSink: Sink[Message, Future[Done]] = Sink.foreach {
-    case message: TextMessage.Strict => println(message.text)
+    case message: TextMessage.Strict => system.log.info(message.text)
   }
 
   val helloSource: Source[Message, NotUsed] = Source.single(TextMessage("hello world!"))
@@ -32,7 +32,7 @@ class WSRequester extends Actor  {
       else throw new RuntimeException(s"Connection failed: ${upgrade.response.status}")
     }
 
-    connected.onComplete(println)
-    closed.foreach(_ => println("closed"))
+    connected.onComplete(x => system.log.info(x.toString))
+    closed.foreach(_ => system.log.info("closed"))
   }
 }
