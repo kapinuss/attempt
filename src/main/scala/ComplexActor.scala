@@ -6,11 +6,12 @@ import scala.concurrent.duration._
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-case class Connection (host: String = "0.0.0.0", port: Int, rest: Boolean, ws: Boolean, lastMessage: LocalMessage)
+case class Socket (port: Int, host: String = "0.0.0.0")
+case class Connection (socket: Socket, rest: Boolean, ws: Boolean, lastMessage: LocalMessage)
 
 class ComplexActor (port: Int) extends Actor {
 
-  var connection: Connection = Connection(port, false, false, )
+  var connection: Connection = Connection(Socket(port), false, false, InfoMessage(""))
 
   def receive(): PartialFunction[Any, Unit] = {
     case m: LocalMessage =>
