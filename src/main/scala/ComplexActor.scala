@@ -20,8 +20,9 @@ class ComplexActor (port: Int) extends Actor {
   implicit var connection: Connection = Connection(Socket(port), false, false, InfoMessage(""))
 
   def receive(): PartialFunction[Any, Unit] = {
-    case InfoMessage("tick") if !connection.rest => { restConnect }
+    case InfoMessage("tick") if connection.rest && !connection.ws => messageViaWS
     case InfoMessage("tick") if connection.rest => wsConnect
+    case InfoMessage("tick") if !connection.rest => restConnect
     case m: MMessage =>
     case _ =>
   }
@@ -40,5 +41,9 @@ class ComplexActor (port: Int) extends Actor {
 
   def wsConnect(implicit connection: Connection): Unit = {
     println("helloWS")
+  }
+
+  def messageViaWS(implicit connection: Connection): Unit = {
+    println("messageViaWS")
   }
 }
