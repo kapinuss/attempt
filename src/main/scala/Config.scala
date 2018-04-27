@@ -1,8 +1,5 @@
 import java.io.File
-import java.time.Duration
-
 import com.typesafe.config.{ConfigException, ConfigFactory}
-
 import scala.collection.JavaConverters._
 
 object Config {
