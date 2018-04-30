@@ -1,5 +1,6 @@
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy}
+import akka.dispatch.MessageDispatcher
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
@@ -7,6 +8,7 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.event.{LogSource, Logging}
 import akka.http.scaladsl.model.ws.{BinaryMessage, Message, TextMessage, UpgradeToWebSocket}
+
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration._
@@ -19,7 +21,8 @@ object Attempt extends Json {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val materializer: ActorMaterializer = ActorMaterializer()
-  implicit val context: ExecutionContextExecutor = system.dispatcher
+  //implicit val context: ExecutionContextExecutor = system.dispatcher
+  implicit val context: MessageDispatcher = system.dispatchers.lookup("normal-dispatcher")
 
   implicit val logSource: LogSource[AnyRef] = new LogSource[AnyRef] {
     def genString(o: AnyRef): String = o.getClass.getName
@@ -56,11 +59,12 @@ object Attempt extends Json {
     case HttpRequest(GET, Uri.Path("/"), _, _, _) => HttpResponse(entity = HttpEntity(ContentTypes.`text/html(UTF-8)`,
       "<html><body>Attempt app ver.0.1</body></html>"))
     case HttpRequest(GET, Uri.Path("/handshakeRequest"), _, _, _) => HttpResponse(entity = HttpEntity(
-        ContentTypes.`application/json`, s"""{"system": "attempt", "port": $port, "message":"Ready"}"""))
+      ContentTypes.`application/json`,
+      s"""{"system": "attempt", "port": $port, "message":"Ready"}"""))
     case HttpRequest(POST, Uri.Path("/handshakeRequest"), _, _, _) =>
       HttpResponse(entity = HttpEntity(ContentTypes.`text/xml(UTF-8)`,
         s"""<xml><system>attempt</system><port>$port</port><message>Ready</message></xml>"""))
-    case request @ HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
+    case request@HttpRequest(GET, Uri.Path("/ws"), _, _, _) =>
       request.header[UpgradeToWebSocket] match {
         case Some(upgrade) => upgrade.handleMessages(webSocketService)
         case None => HttpResponse(400, entity = "Not a valid websocket request!")
@@ -71,7 +75,9 @@ object Attempt extends Json {
   }
 
   val webSocketService: Flow[Message, TextMessage, NotUsed] = Flow[Message].mapConcat {
-    case tm: TextMessage => { log.info("Received message via WS"); TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil }
+    case tm: TextMessage => {
+      log.info("Received message via WS"); TextMessage(Source.single("Hello ") ++ tm.textStream) :: Nil
+    }
     case bm: BinaryMessage => bm.dataStream.runWith(Sink.ignore)
       Nil
   }

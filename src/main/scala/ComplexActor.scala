@@ -19,8 +19,8 @@ class ComplexActor (port: Int) extends Actor {
   }
 
   override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy (maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-    case NullPointerException => restart
-    case IllegalArgumentException => restart
+    case e: NullPointerException => restart
+    case e: IllegalArgumentException => restart
     case _ => resume
   }
 
