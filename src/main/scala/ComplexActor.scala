@@ -1,6 +1,7 @@
 import scala.concurrent.ExecutionContext.Implicits.global
 import Attempt._
-import akka.actor.Actor
+import akka.actor.{Actor, OneForOneStrategy, SupervisorStrategy}
+import akka.actor.SupervisorStrategy._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 
@@ -15,6 +16,12 @@ class ComplexActor (port: Int) extends Actor {
 
   system.scheduler.schedule(3 seconds, 20 seconds) {
     self ! InfoMessage("tick")
+  }
+
+  override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy (maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+    case NullPointerException => restart
+    case IllegalArgumentException => restart
+    case _ => resume
   }
 
   implicit var connection: Connection = Connection(Socket(port), rest = false, ws = false, lastMessage = InfoMessage(""))
