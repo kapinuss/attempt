@@ -27,11 +27,11 @@ object Attempt extends Json {
     override def getClazz(o: AnyRef): Class[_] = o.getClass
   }
 
-  val handshaker: ActorRef = system.actorOf(Props[Handshaker], "handshaker")
-  val wsRequester: ActorRef = system.actorOf(Props[WSRequester], "wsRequester")
-  val nodeKeeper: ActorRef = system.actorOf(Props[WSRequester], "nodeKeeper")
+  val handshaker: ActorRef = system.actorOf(Props[Handshaker].withDispatcher("normal-dispatcher"), "handshaker")
+  val wsRequester: ActorRef = system.actorOf(Props[WSRequester].withDispatcher("normal-dispatcher"), "wsRequester")
+  val nodeKeeper: ActorRef = system.actorOf(Props[WSRequester].withDispatcher("normal-dispatcher"), "nodeKeeper")
   val complexActors: mutable.Buffer[ActorRef] = otherNodes.toBuffer[Int].map(
-    node => system.actorOf(Props(classOf[ComplexActor], node), s"complexActor$node")
+    node => system.actorOf(Props(classOf[ComplexActor], node).withDispatcher("normal-dispatcher"), s"complexActor$node")
   )
 
   val log = Logging(system, this)
